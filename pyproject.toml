@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luad-survival"
+version = "0.2.0"
+description = "Survival analysis and leakage-free transcriptomic risk signatures for TCGA-LUAD"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Tiago Alejo Herrador"}]
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "lifelines", "matplotlib"]
+
+[project.optional-dependencies]
+gsea = ["gseapy", "mygene"]
+dev = ["pytest"]
+
+[project.scripts]
+luad-run = "luad_survival.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
