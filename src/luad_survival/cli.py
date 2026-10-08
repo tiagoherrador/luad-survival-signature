@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from .annotate import ensembl_to_symbol
 from . import eda, plots
 from .data import build_dataset
-from .evaluate import bootstrap_ci, repeated_splits, run_split
+from .evaluate import bootstrap_ci, paired_gain, permutation_null, repeated_splits, run_split, selection_frequency
 
 
 def _round_keep_p(tbl, nd=4):
@@ -29,6 +29,7 @@ def main():
     ap.add_argument("--n-splits", type=int, default=30)
     ap.add_argument("--n-genes", type=int, default=15)
     ap.add_argument("--n-random", type=int, default=200, help="random gene signatures per split for the comparison (0 = skip)")
+    ap.add_argument("--n-perm", type=int, default=100, help="outcome permutations for the whole-pipeline null (0 = skip)")
     ap.add_argument("--gene-symbols", action="store_true", help="look up gene symbols on MyGene.info (needs internet; only gene IDs are sent)")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -43,13 +44,15 @@ def main():
     eda.stage_detail(clin).to_csv(out / "stage_detail.csv")
     cox_tbl, cox_info = eda.clinical_cox(clin)
     _round_keep_p(cox_tbl).to_csv(out / "clinical_cox.csv")
+    cox4, cox4_info = eda.clinical_cox_stage_levels(clin)
+    _round_keep_p(cox4).to_csv(out / "clinical_cox_stage_levels.csv")
     lr_p = eda.logrank_by_stage(clin)
     plots.survival_time_hist(clin, out / "survival_time_hist.png")
     plots.age_hist(clin, out / "age_hist.png")
     plots.km_by_stage(clin, out / "km_by_stage.png", lr_p)
     pc_scores, pc_var, pc_d = eda.pca_by_stage(X, clin)
     plots.pca_stage(pc_scores, pc_var, pc_d, out / "pca_by_stage.png")
-    clinical_summary = {"cox_clinical": cox_info, "logrank_early_vs_advanced_p": lr_p, "pca_cohens_d_early_minus_advanced": pc_d}
+    clinical_summary = {"cox_clinical": cox_info, "cox_clinical_stage_levels": cox4_info, "logrank_early_vs_advanced_p": lr_p, "pca_cohens_d_early_minus_advanced": pc_d}
 
     main_split = run_split(X, clin, seed=42, n_genes=a.n_genes, n_random=a.n_random)
     te = main_split["_test"]
@@ -62,13 +65,34 @@ def main():
     rep.to_csv(out / "repeated_splits.csv", index=False)
     summary["repeated_splits"] = {c: {"mean": float(rep[c].mean()), "sd": float(rep[c].std()),
                                       "min": float(rep[c].min()), "max": float(rep[c].max())}
-                                  for c in ("c_signature", "c_clinical", "c_clinical_plus_signature")}
+                                  for c in ("c_signature", "c_clinical", "c_clinical_binary_stage", "c_clinical_plus_signature",
+                                            "c_proliferation", "c_clinical_plus_proliferation",
+                                            "c_clinical_plus_proliferation_plus_signature") if c in rep.columns}
+    summary["gains"] = {"signature_over_clinical": paired_gain(rep, "c_clinical_plus_signature", "c_clinical")}
+    if "c_proliferation" in rep.columns:
+        summary["gains"]["proliferation_over_clinical"] = paired_gain(rep, "c_clinical_plus_proliferation", "c_clinical")
+        summary["gains"]["signature_over_clinical_plus_proliferation"] = paired_gain(
+            rep, "c_clinical_plus_proliferation_plus_signature", "c_clinical_plus_proliferation")
+        summary["repeated_splits"]["mean_correlation_signature_proliferation"] = float(rep["corr_signature_proliferation"].mean())
+    summary["repeated_splits"]["median_genes_fdr_lt_0.05_in_training"] = float(rep["n_genes_fdr_lt_0.05_in_training"].median())
     summary["repeated_splits"]["frac_splits_logrank_p_lt_0.05"] = float((rep["logrank_p_high_vs_low"] < 0.05).mean())
     if a.n_random:
         summary["repeated_splits"]["random_signatures"] = {
             "mean_c_of_random_signatures": float(rep["random_c_mean"].mean()),
             "mean_percentile_of_our_signature": float(rep["signature_percentile_vs_random"].mean()),
             "fraction_of_splits_above_95th_percentile": float((rep["c_signature"] > rep["random_c_p95"]).mean())}
+    plots.c_index_by_predictor(rep, out / "c_index_by_predictor.png")
+    freq = selection_frequency(X, clin, n_splits=a.n_splits, n_genes=a.n_genes)
+    summary["gene_selection_stability"] = {"distinct_genes_chosen": int(len(freq)), "chosen_in_every_split": int((freq["times_selected"] == a.n_splits).sum()),
+                                           "chosen_in_at_least_half": int((freq["fraction_of_splits"] >= 0.5).sum())}
+    if a.gene_symbols:
+        ann_f = ensembl_to_symbol(list(freq.index))
+        freq.insert(0, "gene_symbol", [ann_f.get(i, {}).get("symbol", "") for i in freq.index])
+    freq.round(3).to_csv(out / "gene_selection_stability.csv")
+    if a.n_perm:
+        pn = permutation_null(X, clin, n_perm=a.n_perm, n_genes=a.n_genes)
+        plots.permutation_null(pn.pop("_null"), pn["observed_mean_c"], out / "permutation_null.png")
+        summary["permutation_null"] = pn
     summary["clinical"] = clinical_summary
     json.dump(summary, open(out / "metrics.json", "w"), indent=2)
 
@@ -102,12 +126,6 @@ def main():
         plt.axvline(0.5, color="k", lw=1); plt.xlabel("Test C-index"); plt.legend(fontsize=8)
         plt.title("Is the signature better than random genes? (seed-42 split)"); plt.tight_layout()
         plt.savefig(out / "random_signature_comparison.png", dpi=150)
-
-    plt.figure(figsize=(6, 4))
-    for c, lab in (("c_clinical", "age + stage"), ("c_signature", "signature"), ("c_clinical_plus_signature", "age + stage + signature")):
-        plt.hist(rep[c], bins=12, alpha=0.5, label=lab)
-    plt.axvline(0.5, color="k", lw=1); plt.xlabel("Test C-index"); plt.legend(); plt.title(f"{a.n_splits} random 70/30 splits")
-    plt.tight_layout(); plt.savefig(out / "c_index_distribution.png", dpi=150)
 
 
 if __name__ == "__main__":

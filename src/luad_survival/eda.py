@@ -64,6 +64,13 @@ def clinical_cox(clin: pd.DataFrame):
                      {"age_years": "Age (per year)", "stage_advanced": "Advanced vs early stage", "female": "Female vs male"})
 
 
+def clinical_cox_stage_levels(clin: pd.DataFrame):
+    """Same model with AJCC stage in four levels (reference: stage I) instead of early vs advanced."""
+    return cox_table(clin, ["age_years", "stage_II", "stage_III", "stage_IV", "female"],
+                     {"age_years": "Age (per year)", "stage_II": "Stage II vs I", "stage_III": "Stage III vs I",
+                      "stage_IV": "Stage IV vs I", "female": "Female vs male"})
+
+
 def logrank_by_stage(clin: pd.DataFrame) -> float:
     a, b = clin[clin.stage_group == "Early"], clin[clin.stage_group == "Advanced"]
     return float(logrank_test(a["OS.time"], b["OS.time"], a["OS"], b["OS"]).p_value)

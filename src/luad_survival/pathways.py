@@ -32,7 +32,13 @@ def run_gsea(rank_symbols: pd.Series, gene_sets: str = "MSigDB_Hallmark_2020", p
     return out.sort_values("FDR q-val").reset_index(drop=True)
 
 
-def run_ora(symbols: list[str], libraries=("MSigDB_Hallmark_2020", "GO_Biological_Process_2021", "KEGG_2021_Human")) -> pd.DataFrame:
+def run_ora(symbols: list[str], background: list[str] | None = None,
+            libraries=("MSigDB_Hallmark_2020", "GO_Biological_Process_2021", "KEGG_2021_Human")) -> pd.DataFrame:
+    """Over-representation of the signature genes. `background` should be the genes that could have been chosen (here the
+    screened pool); without it Enrichr compares against the whole genome, which overstates significance."""
     import gseapy as gp
-    res = gp.enrichr(gene_list=list(symbols), gene_sets=list(libraries), organism="human", outdir=None).results
+    kw = {"background": list(background)} if background else {}
+    res = gp.enrichr(gene_list=list(symbols), gene_sets=list(libraries), organism="human", outdir=None, **kw).results
+    if "Overlap" not in res.columns:  # with a custom background Enrichr no longer reports it; count the shared genes instead
+        res = res.assign(Overlap=res["Genes"].str.count(";") + 1)
     return res[["Gene_set", "Term", "Overlap", "P-value", "Adjusted P-value", "Genes"]].sort_values("Adjusted P-value").reset_index(drop=True)

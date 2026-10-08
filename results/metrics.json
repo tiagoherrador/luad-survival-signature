@@ -2,14 +2,20 @@
   "random_c_mean": 0.5923975409836065,
   "random_c_p95": 0.6574316939890711,
   "signature_percentile_vs_random": 0.795,
+  "c_proliferation": 0.5948087431693989,
+  "c_clinical_plus_proliferation": 0.6885245901639344,
+  "c_clinical_plus_proliferation_plus_signature": 0.6833333333333333,
+  "corr_signature_proliferation": 0.3897150482780974,
   "seed": 42,
   "n_train": 331,
   "n_test": 143,
   "events_test": 52,
   "c_signature": 0.6311475409836066,
-  "c_clinical": 0.6683060109289618,
-  "c_clinical_plus_signature": 0.6614754098360656,
+  "c_clinical": 0.7016393442622951,
+  "c_clinical_plus_signature": 0.6827868852459016,
+  "c_clinical_binary_stage": 0.6683060109289618,
   "logrank_p_high_vs_low": 0.05761115695371293,
+  "n_genes_fdr_lt_0.05_in_training": 143,
   "signature_genes": [
     "ENSG00000107984.10",
     "ENSG00000205420.11",
@@ -39,17 +45,43 @@
       "max": 0.7068597199145502
     },
     "c_clinical": {
+      "mean": 0.6579246361183768,
+      "sd": 0.038971665032348994,
+      "min": 0.5738089039312679,
+      "max": 0.7120816520294327
+    },
+    "c_clinical_binary_stage": {
       "mean": 0.6098640979479234,
       "sd": 0.04419674402139583,
       "min": 0.5049466284821661,
       "max": 0.6771896510799905
     },
     "c_clinical_plus_signature": {
-      "mean": 0.6500482880543555,
-      "sd": 0.037818499354201035,
-      "min": 0.572197999487048,
-      "max": 0.7469736529788749
+      "mean": 0.6709848294406343,
+      "sd": 0.0388700489311734,
+      "min": 0.5970761733777892,
+      "max": 0.7664372181343461
     },
+    "c_proliferation": {
+      "mean": 0.6064367070356712,
+      "sd": 0.032305971870722094,
+      "min": 0.5509972801450589,
+      "max": 0.6895864474339811
+    },
+    "c_clinical_plus_proliferation": {
+      "mean": 0.6780958094210698,
+      "sd": 0.029456866728004714,
+      "min": 0.6057546693589096,
+      "max": 0.7293312269615587
+    },
+    "c_clinical_plus_proliferation_plus_signature": {
+      "mean": 0.6707715460639905,
+      "sd": 0.039904748286566524,
+      "min": 0.5824570402667351,
+      "max": 0.7657251364823167
+    },
+    "mean_correlation_signature_proliferation": 0.5121633002027539,
+    "median_genes_fdr_lt_0.05_in_training": 99.0,
     "frac_splits_logrank_p_lt_0.05": 0.3333333333333333,
     "random_signatures": {
       "mean_c_of_random_signatures": 0.5850544733526539,
@@ -57,12 +89,49 @@
       "fraction_of_splits_above_95th_percentile": 0.1
     }
   },
+  "gains": {
+    "signature_over_clinical": {
+      "mean": 0.013060193322257581,
+      "sd": 0.0364902914200757,
+      "fraction_of_splits_better": 0.6666666666666666
+    },
+    "proliferation_over_clinical": {
+      "mean": 0.020171173302693062,
+      "sd": 0.02683197592951578,
+      "fraction_of_splits_better": 0.8
+    },
+    "signature_over_clinical_plus_proliferation": {
+      "mean": -0.007324263357079393,
+      "sd": 0.036479747770552844,
+      "fraction_of_splits_better": 0.5
+    }
+  },
+  "gene_selection_stability": {
+    "distinct_genes_chosen": 106,
+    "chosen_in_every_split": 0,
+    "chosen_in_at_least_half": 8
+  },
+  "permutation_null": {
+    "observed_mean_c": 0.6397648484820022,
+    "null_mean_c": 0.5031706079077847,
+    "null_sd_c": 0.03189850634996092,
+    "null_p95_c": 0.5578167195323612,
+    "n_permutations": 100,
+    "n_splits_per_permutation": 5,
+    "p_value": 0.009900990099009901
+  },
   "clinical": {
     "cox_clinical": {
       "patients": 474,
       "events": 171,
       "concordance": 0.6225331814695149,
       "likelihood_ratio_test_p": 8.021170082953063e-07
+    },
+    "cox_clinical_stage_levels": {
+      "patients": 474,
+      "events": 171,
+      "concordance": 0.6752981102252389,
+      "likelihood_ratio_test_p": 6.289844825326144e-09
     },
     "logrank_early_vs_advanced_p": 1.7812355077440063e-09,
     "pca_cohens_d_early_minus_advanced": {

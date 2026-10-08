@@ -29,9 +29,11 @@ def main():
     plots.gsea_bar(gsea, out / "gsea_hallmark.png")
     print(gsea.head(10)[["Term", "NES", "FDR q-val"]].to_string(index=False))
     sym = [ann[g]["symbol"] for g in sig.genes if g in ann]
-    ora = run_ora(sym)
+    background = sorted({v["symbol"] for v in ann.values()})   # the genes the signature could have been chosen from
+    ora = run_ora(sym, background=background)
     ora.to_csv(out / "ora_signature.csv", index=False)
     print("signature genes:", sym)
+    print(f"ORA background: {len(background)} genes (the screened pool)")
     print("ORA best adjusted p-value:", ora["Adjusted P-value"].min())
 
 

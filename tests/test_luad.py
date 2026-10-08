@@ -158,3 +158,65 @@ def test_survival_ranking_sign_clipping_and_symbol_mapping():
     ann = {"a": {"symbol": "AAA"}, "b": {"symbol": "AAA"}, "c": {"symbol": "CCC"}}
     out = ranking_by_symbol(r, ann)
     assert out["AAA"] == -50 and out["CCC"] > 0  # duplicate symbol keeps the largest |score|
+
+
+def test_clinical_baseline_uses_four_stage_levels_when_available():
+    from luad_survival.evaluate import clinical_columns
+    clin = _toy_clin(20)
+    assert clinical_columns(clin) == ["age_years", "stage_advanced", "female"]          # fallback
+    for k in ("II", "III", "IV"):
+        clin[f"stage_{k}"] = 0.0
+    assert clinical_columns(clin) == ["age_years", "stage_II", "stage_III", "stage_IV", "female"]
+
+
+def test_proliferation_score_uses_training_statistics_and_needs_enough_genes():
+    from luad_survival.proliferation import PROLIFERATION_GENES, proliferation_columns, proliferation_score
+    ids = list(PROLIFERATION_GENES.values())[:4]
+    rng = np.random.default_rng(0)
+    X = pd.DataFrame(rng.normal(5, 1, (30, 5)), columns=[f"{i}.7" for i in ids] + ["ENSG_other"])
+    cols = proliferation_columns(X)
+    assert cols == [f"{i}.7" for i in ids]                                              # versions are ignored
+    s = proliferation_score(X.iloc[:20], X.iloc[20:], cols)
+    assert len(s) == 10 and abs(proliferation_score(X, X, cols).mean()) < 1e-9          # centred on its own training set
+    assert proliferation_columns(X[["ENSG_other"]]) == []
+
+
+def test_run_split_reports_proliferation_and_binary_baselines_when_possible():
+    from luad_survival.proliferation import PROLIFERATION_GENES
+    X, clin = synthetic(g=60)
+    X = X.rename(columns=dict(zip(X.columns[:6], [f"{i}.1" for i in list(PROLIFERATION_GENES.values())[:6]])))
+    r = run_split(X, clin, seed=0, n_genes=3, n_top_var=60)
+    for k in ("c_proliferation", "c_clinical_plus_proliferation", "c_clinical_plus_proliferation_plus_signature",
+              "c_clinical_binary_stage", "n_genes_fdr_lt_0.05_in_training"):
+        assert k in r
+    assert "c_proliferation" not in run_split(synthetic(g=60)[0], clin, seed=0, n_genes=3, n_top_var=60)
+
+
+def test_permutation_null_is_centred_on_one_half_and_real_signal_beats_it():
+    from luad_survival.evaluate import permutation_null
+    X, clin = synthetic(seed=11)
+    pn = permutation_null(X, clin, n_perm=20, n_splits=2, n_genes=3, n_top_var=60)
+    assert abs(pn["null_mean_c"] - 0.5) < 0.05 and pn["observed_mean_c"] > pn["null_p95_c"] and pn["p_value"] < 0.1
+    Xn = pd.DataFrame(np.random.default_rng(0).normal(5, 1, X.shape), index=X.index, columns=X.columns)
+    assert permutation_null(Xn, clin, n_perm=20, n_splits=2, n_genes=3, n_top_var=60)["p_value"] > 0.05
+
+
+def test_selection_frequency_finds_planted_genes_and_paired_gain():
+    from luad_survival.evaluate import paired_gain, selection_frequency
+    X, clin = synthetic(seed=2)
+    f = selection_frequency(X, clin, n_splits=6, n_genes=3, n_top_var=60)
+    assert set(f.index[:3]) == {"G0", "G1", "G2"} and f["fraction_of_splits"].iloc[0] == 1.0
+    g = paired_gain(pd.DataFrame({"a": [0.7, 0.6, 0.65], "b": [0.6, 0.6, 0.7]}), "a", "b")
+    assert g["mean"] == pytest.approx(0.05 / 3) and g["fraction_of_splits_better"] == pytest.approx(1 / 3)
+
+
+def test_fdr_count_and_stage_level_cox():
+    from luad_survival.evaluate import _fdr_count
+    from luad_survival.eda import clinical_cox_stage_levels
+    assert _fdr_count(pd.Series([1e-8, 1e-6, 0.5, 0.9, np.nan])) == 2
+    clin = _toy_clin(300)
+    level = np.random.default_rng(4).choice(["I", "II", "III", "IV"], 300)
+    for k in ("II", "III", "IV"):
+        clin[f"stage_{k}"] = (level == k).astype(float)
+    tbl, info = clinical_cox_stage_levels(clin)
+    assert {"Stage II vs I", "Stage III vs I", "Stage IV vs I"} <= set(tbl.index) and info["patients"] == 300

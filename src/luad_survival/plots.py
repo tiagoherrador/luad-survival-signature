@@ -79,3 +79,30 @@ def gsea_bar(gsea, path, top=12):
     ax.set_xlabel("Enrichment score (higher = pathway more active in patients with worse survival)", fontsize=9)
     ax.set_title("Hallmark pathways linked to survival (GSEA, training patients)", fontsize=10)
     _save(fig, path)
+
+
+PREDICTORS = [("c_clinical_binary_stage", "age + early/advanced stage"), ("c_clinical", "age + sex + stage I-IV"),
+              ("c_signature", "15-gene signature"), ("c_proliferation", "proliferation score"),
+              ("c_clinical_plus_signature", "clinical + signature"), ("c_clinical_plus_proliferation", "clinical + proliferation"),
+              ("c_clinical_plus_proliferation_plus_signature", "clinical + proliferation + signature")]
+
+
+def c_index_by_predictor(rep, path):
+    cols = [(c, lab) for c, lab in PREDICTORS if c in rep.columns]
+    fig, ax = plt.subplots(figsize=(7.5, 4.8))
+    ax.boxplot([rep[c] for c, _ in cols], vert=False, tick_labels=[lab for _, lab in cols], widths=0.6)
+    ax.axvline(0.5, color="k", lw=1, ls="--")
+    ax.invert_yaxis()
+    ax.set_xlabel("C-index on held-out patients (30 random splits; 0.5 = coin flip)")
+    ax.set_title("What predicts survival?")
+    _save(fig, path)
+
+
+def permutation_null(null, observed, path):
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.hist(null, bins=20, color="grey", alpha=0.7, label="survival shuffled among patients")
+    ax.axvline(observed, color=RISK, lw=2, label=f"real data ({observed:.3f})")
+    ax.axvline(0.5, color="k", lw=1)
+    ax.set_xlabel("Mean held-out C-index of the signature"); ax.set_ylabel("Number of shuffles"); ax.legend(fontsize=8)
+    ax.set_title("Would the pipeline look good on pure noise?")
+    _save(fig, path)
