@@ -37,8 +37,7 @@ def main():
     X, clin = build_dataset(a.data_dir)
     print(f"patients={len(clin)} genes={X.shape[1]} deaths={int(clin['OS'].sum())}")
 
-    # --- the notebook's clinical / exploratory outputs, at patient level
-    out.mkdir(parents=True, exist_ok=True)
+    # --- clinical / exploratory outputs, at patient level
     eda.cohort_overview(X, clin).to_frame("value").to_csv(out / "cohort_overview.csv")
     eda.stage_summary(clin).to_csv(out / "stage_summary.csv")
     eda.stage_detail(clin).to_csv(out / "stage_detail.csv")
@@ -111,13 +110,14 @@ def main():
     risk.index.name = "patient"
     risk.round(4).sort_values("risk_score", ascending=False).to_csv(out / "test_risk_scores.csv")
     tt = te_tbl.copy(); tt["risk_score_per_SD"] = (tt["sig"] - tt["sig"].mean()) / tt["sig"].std()
-    ctab, cinfo = eda.cox_table(tt, ["age_years", "stage_advanced", "risk_score_per_SD"],
-                                {"age_years": "Age (per year)", "stage_advanced": "Advanced vs early stage", "risk_score_per_SD": "Signature risk score (per SD)"})
+    ctab, cinfo = eda.cox_table(tt, ["age_years", "female", "stage_II", "stage_III", "stage_IV", "risk_score_per_SD"],
+                                {"age_years": "Age (per year)", "female": "Female vs male", "stage_II": "Stage II vs I", "stage_III": "Stage III vs I",
+                                 "stage_IV": "Stage IV vs I", "risk_score_per_SD": "Signature risk score (per SD)"})
     _round_keep_p(ctab).to_csv(out / "test_cox_with_signature.csv")
     summary["test_cox_with_signature"] = cinfo
     json.dump(summary, open(out / "metrics.json", "w"), indent=2)
     plots.km_test_groups(te_tbl, main_split["_group"], out / "km_test_signature.png", summary["logrank_p_high_vs_low"])
-    plots.signature_genes(tbl.reset_index() if False else tbl, out / "signature_genes.png")
+    plots.signature_genes(tbl, out / "signature_genes.png")
 
     if a.n_random:
         plt.figure(figsize=(6, 4))

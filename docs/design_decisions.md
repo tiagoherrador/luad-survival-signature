@@ -16,7 +16,7 @@ The C-index ranks pairs of patients by who died first, handles censored follow-u
 *Why:* Harrell et al. (1996) describe it as an interpretable index of predictive discrimination for survival data and recommend validating it by bootstrap or cross-validation.
 
 ## 4. Compare against a proper clinical baseline, a proliferation score *and* random genes
-A signature is only useful if it adds something to what is already known, and a baseline that is too weak makes any gene score look good. My first version used age and early/advanced stage; with the four stage levels (I–IV) plus age and sex the baseline rises from 0.61 to 0.66, and the signature's gain shrinks from about +0.04 to +0.01.
+A signature is only useful if it adds something to what is already known, and a baseline that is too weak makes any gene score look good. With age and early/advanced stage only, the baseline is 0.61 and the signature seems to add about +0.04; with the four stage levels (I–IV) plus age and sex the baseline rises to 0.66 and the gain shrinks to about +0.01.
 So I report: (a) the clinical baseline, (b) the signature alone, (c) both together, (d) a simple 12-gene proliferation score alone and added to the baseline, and (e) the C-index of 200 random 15-gene signatures per split, treated exactly like the real one.
 *Why:* most random gene sets show some association with cancer outcome, largely through proliferation (Venet et al. 2011, in breast cancer); and molecular scores should be judged on what they add beyond stage and the other standard clinical factors (Subramanian & Simon 2010; Shedden et al. 2008 found that combining clinical and molecular information worked best).
 *Result:* the signature adds ≈ +0.01 C-index to the proper baseline, the proliferation score adds ≈ +0.02, and the signature adds nothing (−0.007) on top of proliferation. It does not consistently beat random sets either (above the 95th percentile in 3 of 30 splits). I report this as it came out.
@@ -31,7 +31,7 @@ The risk score is the mean of the z-scored expression of the 15 genes, each mult
 *Why:* a plain average mixes genes that push survival in opposite directions, so their effects partly cancel. This is my own design choice; there is no specific paper behind it, but it is checked on synthetic data (the planted risk and protective genes are recovered with the right signs).
 
 ## 7. Primary tumours only, one row per patient
-TCGA files also contain matched normal tissue and repeated samples. Mixing them in, or counting a patient several times, distorts both the expression analysis and the survival statistics (the original notebook's Cox model counted 878 observations that were really 475 patients, and averaged tumour and normal tissue for 59 patients).
+TCGA files also contain matched normal tissue and repeated samples. Mixing them in, or counting a patient several times, distorts both the expression analysis and the survival statistics (in an early version of this analysis that inflated a Cox model to 878 "observations" coming from only 475 patients, and averaged tumour and normal tissue for 59 of them).
 *Why:* basic data hygiene (TCGA sample-type convention; see the note in references.md).
 
 ## 8. Fast univariate Cox screening
@@ -51,4 +51,4 @@ I follow the spirit of transparent-reporting guidance (McShane & Hayes 2012; Col
 - **External validation** on an independent cohort (for example from GEO). This is the most important missing piece.
 - **More clinical and technical covariates:** smoking, driver mutations (EGFR, KRAS), tumour purity and lab batch.
 - **Penalised models** (elastic-net Cox) or stability selection to get a more reliable gene list, and **time-dependent** performance curves.
-- Tuning the signature size (15 genes is inherited, not optimised).
+- Tuning the signature size (15 genes was fixed in advance, not optimised).

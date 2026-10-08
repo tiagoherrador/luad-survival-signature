@@ -142,7 +142,7 @@
   "test_cox_with_signature": {
     "patients": 143,
     "events": 52,
-    "concordance": 0.6745901639344263,
-    "likelihood_ratio_test_p": 7.329621666694861e-05
+    "concordance": 0.7117486338797814,
+    "likelihood_ratio_test_p": 0.0002573480084180212
   }
 }

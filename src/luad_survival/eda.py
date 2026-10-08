@@ -1,4 +1,4 @@
-"""Cohort description and clinical analysis (patient level): the tables and figures of the exploratory notebook."""
+"""Cohort description and clinical analysis (patient level): the descriptive tables and figures of the cohort."""
 import numpy as np
 import pandas as pd
 from lifelines import CoxPHFitter, KaplanMeierFitter

@@ -1,8 +1,8 @@
 pandas
 numpy
+scipy
 matplotlib
 scikit-learn
 lifelines
+requests
 gseapy
-mygene
-jupyter

@@ -9,7 +9,7 @@
 This is an **exploratory data analysis** of the public TCGA-LUAD cohort (lung adenocarcinoma, the most common type of lung cancer), not a ready-to-use model.
 Doctors already estimate a patient's outlook with the **stage** of the disease. But two patients with the same stage can do very differently, and part of the reason may be written in the tumour: **which of its ~60,000 genes are switched on, and how strongly.**
 
-I started from an exploratory notebook I wrote in Colab (kept in [`notebooks/exploratory/`](notebooks/exploratory) with all its outputs), rebuilt it as a tested Python package, and then did the part I find most interesting: **trying hard to break my own result.** The questions are:
+I began with a quick exploratory notebook (kept in [`notebooks/exploratory/`](notebooks/exploratory)), turned it into a tested Python package, and then did the part I find most interesting: **trying hard to break my own result.** The questions are:
 
 1. **How much does stage tell us?** (the clinical baseline)
 2. **Is there a set of genes whose activity tracks survival** — and does it still work on patients that were *not* used to find it?
@@ -29,7 +29,7 @@ Everything is done at the level of the **patient**, with one strict rule: a gene
 | Are those 15 genes *the* genes? | **No.** Change the training patients and the list changes: 106 different genes show up across 30 splits, none in all of them. |
 | What biology is involved? | **Cell division, invasion (EMT) and metabolic adaptation** — what you would expect from aggressive tumours. |
 
-I think this is a more useful result than a flashy one: the analysis is clean, the signal is real, and the limits are measured rather than guessed.
+I find this more useful than a flashy result: the signal is real, and its limits are measured rather than guessed.
 
 ## What the analysis gives you
 
@@ -68,7 +68,7 @@ Those 15 are the list from one particular training set; with other training pati
 
 ## Following the analysis step by step
 
-The first steps follow the order of my original notebook; the last ones are the extra checks I added.
+Steps 1–4 are the exploration and the search for a signature. Steps 5–7 are the checks I use to decide how much to trust it.
 
 ### 1. Who are the patients?
 
@@ -91,7 +91,7 @@ Half of the patients were followed for less than ~1.8 years, and the typical (Ka
 
 ### 2. Stage matters — a lot
 
-Following the notebook, I first split patients into **early** (stages I–II) and **advanced** (stages III–IV) disease.
+I first split patients into **early** (stages I–II) and **advanced** (stages III–IV) disease.
 
 | Group | Patients | Deaths | Median survival (Kaplan–Meier) | Median age |
 |---|---|---|---|---|
@@ -123,7 +123,7 @@ A statistical model that looks at age, stage and sex *together* (Cox regression)
 | Age (per extra year) | 1.01 (0.99 – 1.03) | 0.21 |
 | Female vs male | 1.04 (0.76 – 1.41) | 0.82 |
 
-*Hazard ratio:* how many times higher the risk of dying at any moment is, compared with the reference group. 3.23 means roughly three times the risk. Age, sex and the four stage levels together rank patients with a **C-index of about 0.66** on held-out patients (see the glossary below). This is the bar any gene signature has to clear, and it is higher than the one I used in the first version (early/advanced only: 0.61).
+*Hazard ratio:* how many times higher the risk of dying at any moment is, compared with the reference group. 3.23 means roughly three times the risk. Age, sex and the four stage levels together rank patients with a **C-index of about 0.66** on held-out patients (see the glossary below). This is the bar any gene signature has to clear (with early/advanced stage only, it would be 0.61).
 
 ### 3. Does the whole gene-activity profile separate early from advanced tumours?
 
@@ -145,13 +145,18 @@ Then the score is computed for the held-out patients, who split into a **high-ri
 
 ![Held-out patients split by the signature](results/km_test_signature.png)
 
-The high-risk group does worse, but the two curves overlap a lot and the difference is borderline (log-rank p = 0.058). Taking age and early/advanced stage into account in the same model, the signature keeps a modest, statistically detectable effect:
+The high-risk group does worse, but the two curves overlap a lot and the difference is borderline (log-rank p = 0.058). Taking age, sex and stage into account in the same model, the signature keeps a modest effect that is only just statistically detectable:
 
 | Factor (held-out patients only) | Hazard ratio (95 % CI) | p-value |
 |---|---|---|
-| Advanced vs early stage | 3.39 (1.94 – 5.91) | 1.7×10⁻⁵ |
-| **Signature risk score (per SD)** | **1.36 (1.04 – 1.78)** | **0.025** |
-| Age (per extra year) | 1.02 (0.99 – 1.05) | 0.15 |
+| Stage III vs I | 4.02 (2.01 – 8.02) | 8×10⁻⁵ |
+| Stage IV vs I | 6.12 (2.19 – 17.11) | 0.0006 |
+| Stage II vs I | 1.73 (0.76 – 3.92) | 0.19 |
+| **Signature risk score (per SD)** | **1.34 (1.01 – 1.76)** | **0.039** |
+| Age (per extra year) | 1.03 (1.00 – 1.06) | 0.063 |
+| Female vs male | 0.76 (0.42 – 1.36) | 0.35 |
+
+With only 143 patients and 52 deaths, the intervals are wide; this table is a snapshot of one split, not a firm estimate.
 
 ### 5. Is this just luck? Shuffling the survival data
 
@@ -159,7 +164,7 @@ A signature picked out of 2,000 candidate genes can look good on held-out patien
 
 ![Real data vs shuffled survival](results/permutation_null.png)
 
-On shuffled data the held-out C-index sits at **0.50 ± 0.03** (the highest of 100 shuffles was about 0.59); on the real data it is **0.64** (average of the first five splits). So the pipeline is not manufacturing performance out of nothing (p ≈ 0.01, the smallest p-value that 100 shuffles can give): **the genes do carry some real signal about survival.** The next question is whether that signal is *new*.
+On shuffled data the held-out C-index sits at **0.50 ± 0.03** (95 % of the shuffles stayed below 0.56); on the real data it is **0.64** (average of the first five splits). So the pipeline is not manufacturing performance out of nothing (p ≈ 0.01, the smallest p-value that 100 shuffles can give): **the genes do carry some real signal about survival.** The next question is whether that signal is *new*.
 
 ### 6. Does the signature add anything? How it compares
 
@@ -167,7 +172,7 @@ A single random split can be lucky, so I repeated the whole procedure on **30 di
 
 | Held-out C-index | Average over 30 splits (± variation) |
 |---|---|
-| Age + early/advanced stage (my first baseline) | 0.610 ± 0.044 |
+| Age + early/advanced stage (a simpler baseline) | 0.610 ± 0.044 |
 | **Age + sex + stage I–IV (proper clinical baseline)** | **0.658 ± 0.039** |
 | 15-gene signature alone | 0.617 ± 0.038 |
 | Proliferation score alone (12 cell-division genes) | 0.606 ± 0.032 |
@@ -179,7 +184,7 @@ A single random split can be lucky, so I repeated the whole procedure on **30 di
 
 Three things stand out:
 
-- **With the proper baseline, the signature's gain is small:** +0.013 ± 0.036 on average, better in 20 of 30 splits. In my first version I compared against a weaker baseline (early/advanced stage only) and the gain looked like +0.04 — that was mostly the baseline being too weak.
+- **With the proper baseline, the signature's gain is small:** +0.013 ± 0.036 on average, better in 20 of 30 splits. Against the simpler early/advanced baseline the gain would look like +0.04, but that is mostly the baseline being too weak, and a weak baseline flatters any gene score.
 - **A plain proliferation score does the same job.** The 12-gene score (MKI67, TOP2A, BIRC5, CCNB1, CDC20, UBE2C, AURKB, TPX2, CENPF, MYBL2, CCNA2, PLK1) measures how fast cells divide. On its own it matches the signature (0.606 vs 0.617), and added to the clinical baseline it gains +0.020 (better in 24 of 30 splits). The signature and the score are moderately correlated (r ≈ 0.5).
 - **On top of proliferation, the signature adds nothing:** −0.007 ± 0.036 (better in only 15 of 30 splits).
 
@@ -190,11 +195,11 @@ A well-known pitfall of gene signatures is that *almost any* set of genes shows 
 **Not clearly.** Random 15-gene sets reach an average C-index of about 0.59; mine is 0.63 on the seed-42 split, better than ~80 % of them, but on average over the 30 splits it beats 95 % of random sets in only **3 splits out of 30**.
 Both checks tell the same story: the genes do carry signal, but most of it is the general "fast-growing tumour" signal that many gene sets share.
 
-**Are these 15 genes *the* genes?** I also looked at how often each gene is picked when only the training patients change. Across the 30 splits, **106 different genes** entered the signature and **none appeared in all 30**; only 8 appeared in at least half (DKK1 in 28 splits, KRT6A in 24, SACK1A in 21, …; the full list is in `results/gene_selection_stability.csv`). In a typical training set about 100 genes pass a strict false-discovery cut-off, so "the top 15" is really a sample of a larger, correlated group of genes. DKK1 and KRT6A are the most reliable members.
+**Are these 15 genes *the* genes?** I also looked at how often each gene is picked when only the training patients change. Across the 30 splits, **106 different genes** entered the signature and **none appeared in all 30**; only 8 appeared in at least half (DKK1 in 28 splits, KRT6A in 24, SACK1A in 21, …; the full list is in `results/gene_selection_stability.csv`). In a typical training set about 100 genes pass a strict significance cut-off (one that accounts for testing thousands of genes at once), so "the top 15" is really a sample of a larger, correlated group of genes. DKK1 and KRT6A are the most reliable members.
 
 ### 7. What biology do the genes point to?
 
-Looking at the whole genome (not only the 15 genes), I ranked every gene by how strongly its activity relates to survival in the training patients and asked which **biological programmes** (the *Hallmark* gene collections) are concentrated at the "worse survival" end — a method called *gene-set enrichment analysis* (GSEA). The ranking covers the ~1,900 most variable, well-expressed genes (the same pool the signature was picked from), not the whole genome.
+Looking beyond the 15 genes, I ranked about 1,900 genes (the most variable, well-expressed ones: the same pool the signature was picked from) by how strongly their activity relates to survival in the training patients. Then I asked which **biological programmes** (the *Hallmark* gene collections) are concentrated at the "worse survival" end — a method called *gene-set enrichment analysis* (GSEA).
 
 ![Hallmark pathways](results/gsea_hallmark.png)
 
@@ -229,25 +234,8 @@ A second, narrower test asks whether the 15 signature genes *themselves* are enr
 - **The list of genes is not stable.** Different training patients give different lists (step 6); I would trust the biology (proliferation, invasion, metabolism) more than any particular set of 15 genes.
 - **Only some patients have all the data.** Of the patients in the files, 474 had a primary tumour sample and complete age, stage and sex.
 - **Things I did not adjust for:** smoking, the tumour's genetic drivers (EGFR, KRAS…), how much of the sample is actually tumour, and the lab batch. Any of them could explain part of the signal.
-- **The size of the signature (15 genes) was not tuned**; I kept it from the first version of the project.
+- **The size of the signature (15 genes) was not tuned**: I fixed it in advance, and another size might behave differently.
 - **Survival here is "overall survival"**: death from any cause, not only from lung cancer. Half of the patients were followed for less than ~1.8 years, and only 41 were followed for more than five.
-
-## What I changed from my original notebook
-
-I rebuilt the notebook at **patient level** and fixed the problems I found when I went back over it. I re-ran the original code exactly (same 15 genes, same 143 test patients) to be sure the differences below come from the fixes and not from chance.
-
-| In the original notebook | In this repository |
-|---|---|
-| Tables and Cox models counted **rows**, not patients: 878 observations, which were really 475 patients (the merge with the clinical file repeated them) | One row per patient: **474 patients** |
-| Normal-tissue samples mixed in with the tumours (59 patients had tumour and normal averaged together) | **Primary tumours only** |
-| Gene values log-transformed a second time (they were already on a log scale) | Values used as provided |
-| Risk score = plain average of the 15 genes, so risk and protective genes **cancelled each other** | Each gene counted **in its own direction** |
-| Gene filtering done with all patients | Done **on the training patients only** |
-| One split, one number; the score on its own reached C = 0.63 and a borderline log-rank p = 0.08, while the reported HR (8.95, CI 1.02 – 78.8) was per raw unit | **30 splits**, effect **per standard deviation** (1.36, CI 1.04 – 1.78), and a shuffling test of the whole pipeline |
-| Age and early/advanced stage as the only baseline | **Age + sex + stage I–IV**, and a **proliferation score** as a second competitor |
-| Only 4 of the 15 genes are in both lists (DKK1, KRT6A, LOXL2, IRX5) | The rest changed because of the fixes above, and because the list itself is not stable |
-| Enrichment of the 15 genes against the whole genome | Against the genes that could have been chosen |
-| Conclusion: the signature captures "a real biological axis, not a spurious association" | The **pathways** do point to a real biological axis; the **signature** carries real but modest signal that is mostly the proliferation signal |
 
 ## Try it yourself
 
@@ -257,7 +245,7 @@ Everything runs on **public data**; there is no trained model to request — the
 pip install -e ".[gsea,dev]"
 # download the three TCGA-LUAD files from UCSC Xena into data/ (see data/README.md)
 
-luad-run      --data-dir data --out results --gene-symbols   # tables and figures of steps 1-6
+luad-run      --data-dir data --out results --gene-symbols   # tables and figures of steps 1-6 (a few minutes)
 luad-pathways --data-dir data --out results                   # step 7 (needs internet)
 pytest -q                                                      # automated tests
 ```

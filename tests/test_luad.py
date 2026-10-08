@@ -220,3 +220,23 @@ def test_fdr_count_and_stage_level_cox():
         clin[f"stage_{k}"] = (level == k).astype(float)
     tbl, info = clinical_cox_stage_levels(clin)
     assert {"Stage II vs I", "Stage III vs I", "Stage IV vs I"} <= set(tbl.index) and info["patients"] == 300
+
+
+def test_loading_keeps_primary_tumours_one_row_per_patient_and_four_stage_levels(tmp_path):
+    genes = ["ENSG1.1", "ENSG2.1"]
+    expr = pd.DataFrame({"TCGA-AA-0001-01A": [1.0, 2.0], "TCGA-AA-0001-11A": [9.0, 9.0], "TCGA-AA-0002-01A": [3.0, 4.0],
+                         "TCGA-AA-0002-01B": [7.0, 7.0], "TCGA-AA-0003-01A": [5.0, 6.0]}, index=genes)
+    expr.index.name = "Ensembl_ID"
+    expr.to_csv(tmp_path / "TCGA-LUAD.star_tpm.tsv.gz", sep="\t")
+    pd.DataFrame({"sample": ["TCGA-AA-0001-01A", "TCGA-AA-0001-11A", "TCGA-AA-0002-01A", "TCGA-AA-0003-01A"],
+                  "OS": [1, 1, 0, 1], "OS.time": [100, 100, 400, 0]}).to_csv(tmp_path / "TCGA-LUAD.survival.tsv.gz", sep="\t", index=False)
+    pd.DataFrame({"sample": ["TCGA-AA-0001-01A", "TCGA-AA-0001-01A", "TCGA-AA-0001-11A", "TCGA-AA-0002-01A", "TCGA-AA-0003-01A"],
+                  "age_at_diagnosis.diagnoses": [365.25 * 60] * 5, "gender.demographic": ["female", "female", "female", "male", "male"],
+                  "ajcc_pathologic_stage.diagnoses": ["Stage IIIA", "Stage IIIA", "Stage IIIA", "Stage IB", "Stage IV"]}
+                 ).to_csv(tmp_path / "TCGA-LUAD.clinical.tsv.gz", sep="\t", index=False)
+    from luad_survival.data import build_dataset
+    X, clin = build_dataset(tmp_path)
+    assert list(clin.index) == ["TCGA-AA-0001", "TCGA-AA-0002"]               # normal tissue, repeated rows and OS.time = 0 are out
+    assert X.loc["TCGA-AA-0001"].tolist() == [1.0, 2.0] and X.loc["TCGA-AA-0002"].tolist() == [3.0, 4.0]  # tumour values, first sample
+    assert clin.loc["TCGA-AA-0001", ["stage_II", "stage_III", "stage_IV"]].tolist() == [0.0, 1.0, 0.0]
+    assert clin.loc["TCGA-AA-0002", ["stage_II", "stage_III", "stage_IV"]].tolist() == [0.0, 0.0, 0.0]

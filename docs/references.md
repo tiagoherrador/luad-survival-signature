@@ -18,6 +18,6 @@ Peer-reviewed sources retrieved from PubMed (metadata verified there). Each entr
 
 ## What the literature does *not* say
 
-- None of these sources prescribes the **size of a signature** (I use 15 genes, inherited from the first version of the project and not tuned) or compares my exact scoring rule.
+- None of these sources prescribes the **size of a signature** (I use 15 genes, fixed in advance and not tuned) or compares my exact scoring rule.
 - The **sign-aware score** (each gene counted in the direction of its effect) is my own design choice, justified by simple reasoning and tested on synthetic data, not by a specific paper.
 - The TCGA barcode convention used to keep primary tumours only (sample type `01`; `11` is matched normal tissue) is standard TCGA documentation and was not retrieved from PubMed.

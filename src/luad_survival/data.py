@@ -5,8 +5,8 @@
 * clinical    : `TCGA-LUAD.clinical.tsv.gz`
 
 Only **primary tumour** samples (TCGA sample type 01) are kept, one per patient.
-(The original exploratory notebook trimmed barcodes to 12 characters and averaged duplicates, which also mixed
-in matched normal-tissue samples, and applied `log1p` on top of already log-transformed values.)
+Trimming barcodes to 12 characters and averaging duplicates would also mix in matched normal tissue, and applying
+`log1p` on top of the already log-transformed values would distort the scale, so neither is done here.
 """
 from pathlib import Path
 
