@@ -87,3 +87,74 @@ def test_stage_and_barcode_helpers():
     assert simplify_stage("Stage IV") == "Advanced" and np.isnan(simplify_stage(None))
     assert patient_id("TCGA-38-7271-01A") == "TCGA-38-7271"
     assert is_primary_tumour("TCGA-38-7271-01A") and not is_primary_tumour("TCGA-38-7271-11A")
+
+
+def test_random_signatures_do_not_beat_a_real_signal_but_look_like_noise_on_noise():
+    from luad_survival.evaluate import run_split
+    X, clin = synthetic(seed=7)
+    r = run_split(X, clin, seed=0, n_genes=3, n_top_var=60, n_random=60)
+    assert r["c_signature"] > r["random_c_mean"] and r["signature_percentile_vs_random"] > 0.9
+    # on pure noise the real "signature" is just another random draw: its percentile is not systematically extreme
+    pc = []
+    for k in range(10):
+        Xk, ck = synthetic(seed=200 + k)
+        Xn = pd.DataFrame(np.random.default_rng(k).normal(5, 1, Xk.shape), index=Xk.index, columns=Xk.columns)
+        pc.append(run_split(Xn, ck, seed=0, n_genes=5, n_top_var=60, n_random=40)["signature_percentile_vs_random"])
+    assert 0.3 < np.mean(pc) < 0.7
+
+
+def test_ensembl_to_symbol_strips_versions_and_survives_failures():
+    from luad_survival.annotate import ensembl_to_symbol, strip_version
+    assert strip_version("ENSG00000107984.10") == "ENSG00000107984"
+    fake = lambda ids: [{"query": "ENSG00000107984", "symbol": "DKK1", "name": "dickkopf WNT signaling pathway inhibitor 1"}]
+    out = ensembl_to_symbol(["ENSG00000107984.10", "ENSG00000000000.1"], fetch=fake)
+    assert out["ENSG00000107984.10"]["symbol"] == "DKK1" and "ENSG00000000000.1" not in out
+    def broken(ids):
+        raise RuntimeError("offline")
+    with pytest.warns(UserWarning):
+        assert ensembl_to_symbol(["ENSG00000107984"], fetch=broken) == {}
+
+
+def _toy_clin(n=200, seed=0):
+    rng = np.random.default_rng(seed)
+    adv = rng.integers(0, 2, n).astype(float)
+    t = rng.exponential(1000 * np.exp(-0.9 * adv)); c = rng.exponential(1500, n)
+    clin = pd.DataFrame({"OS.time": np.minimum(t, c), "OS": (t <= c).astype(int), "age_years": rng.normal(65, 8, n),
+                         "stage_advanced": adv, "female": rng.integers(0, 2, n).astype(float)})
+    clin["stage_group"] = np.where(adv == 1, "Advanced", "Early")
+    clin["stage_detail"] = np.where(adv == 1, "Stage IIIA", "Stage IA")
+    clin.index = [f"P{i}" for i in range(n)]
+    return clin
+
+
+def test_stage_tables_count_patients_once_and_cox_recovers_the_stage_effect():
+    from luad_survival.eda import clinical_cox, stage_detail, stage_summary
+    clin = _toy_clin()
+    s = stage_summary(clin)
+    assert s["patients"].sum() == len(clin) and set(s.index) == {"Early", "Advanced"}
+    assert (s["deaths"] <= s["patients"]).all()
+    assert stage_detail(clin)["patients"].sum() == len(clin)
+    tbl, info = clinical_cox(clin)
+    hr = tbl.loc["Advanced vs early stage"]
+    assert 1.8 < hr["hazard_ratio"] < 3.5 and hr["p_value"] < 0.001 and info["patients"] == len(clin)
+
+
+def test_pca_effect_size_has_the_right_sign_and_cohens_d():
+    from luad_survival.eda import cohens_d, pca_by_stage
+    assert cohens_d([1, 2, 3, 4], [3, 4, 5, 6]) < 0  # first group lower -> negative d
+    clin = _toy_clin(120)
+    rng = np.random.default_rng(1)
+    X = pd.DataFrame(rng.normal(size=(120, 50)), index=clin.index, columns=[f"G{i}" for i in range(50)])
+    X.iloc[:, :10] += (clin["stage_advanced"].values[:, None] * 3)  # strong stage signal
+    sc, var, d = pca_by_stage(X, clin, n_genes=50)
+    assert abs(d["PC1"]) > 1.0 and len(var) == 2
+
+
+def test_survival_ranking_sign_clipping_and_symbol_mapping():
+    from luad_survival.pathways import ranking_by_symbol, survival_ranking
+    scr = pd.DataFrame({"beta": [0.5, -0.5, 0.1, np.nan], "p": [1e-4, 1e-100, 0.5, 0.01]}, index=["a", "b", "c", "d"])
+    r = survival_ranking(scr)
+    assert r["a"] > 0 and r["b"] == -50 and "d" not in r.index
+    ann = {"a": {"symbol": "AAA"}, "b": {"symbol": "AAA"}, "c": {"symbol": "CCC"}}
+    out = ranking_by_symbol(r, ann)
+    assert out["AAA"] == -50 and out["CCC"] > 0  # duplicate symbol keeps the largest |score|

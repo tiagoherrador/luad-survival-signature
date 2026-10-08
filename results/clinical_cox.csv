@@ -1,0 +1,4 @@
+,hazard_ratio,ci95_low,ci95_high,p_value
+Age (per year),1.0081,0.9928,1.0237,0.30177144464561034
+Advanced vs early stage,2.5546,1.8614,3.5061,6.379864492084735e-09
+Female vs male,0.9848,0.7276,1.333,0.9212409062240263

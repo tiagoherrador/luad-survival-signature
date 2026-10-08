@@ -55,8 +55,10 @@ def load_clinical(survival_path, clinical_path) -> pd.DataFrame:
     df["age_years"] = df["age_at_diagnosis.diagnoses"] / 365.25
     df["stage_group"] = df["ajcc_pathologic_stage.diagnoses"].map(simplify_stage)
     df["stage_advanced"] = (df["stage_group"] == "Advanced").astype(float).where(df["stage_group"].notna())
+    df["female"] = (df["gender.demographic"] == "female").astype(float).where(df["gender.demographic"].notna())
+    df = df.rename(columns={"ajcc_pathologic_stage.diagnoses": "stage_detail"})
     df = df.drop_duplicates("patient").set_index("patient")
-    return df[["OS.time", "OS", "age_years", "stage_group", "stage_advanced", "gender.demographic"]]
+    return df[["OS.time", "OS", "age_years", "stage_group", "stage_detail", "stage_advanced", "female", "gender.demographic"]]
 
 
 def build_dataset(data_dir) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -64,7 +66,7 @@ def build_dataset(data_dir) -> tuple[pd.DataFrame, pd.DataFrame]:
     d = Path(data_dir)
     X = load_expression(d / "TCGA-LUAD.star_tpm.tsv.gz")
     clin = load_clinical(d / "TCGA-LUAD.survival.tsv.gz", d / "TCGA-LUAD.clinical.tsv.gz")
-    clin = clin.dropna(subset=["OS.time", "OS", "age_years", "stage_advanced"])
+    clin = clin.dropna(subset=["OS.time", "OS", "age_years", "stage_advanced", "female"])
     clin = clin[clin["OS.time"] > 0]
     ids = X.index.intersection(clin.index)
     return X.loc[ids], clin.loc[ids]

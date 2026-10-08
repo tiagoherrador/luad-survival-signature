@@ -10,14 +10,15 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [{name = "Tiago Alejo Herrador"}]
-dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "lifelines", "matplotlib"]
+dependencies = ["numpy", "pandas", "scipy", "scikit-learn", "lifelines", "matplotlib", "requests"]
 
 [project.optional-dependencies]
-gsea = ["gseapy", "mygene"]
+gsea = ["gseapy"]
 dev = ["pytest"]
 
 [project.scripts]
 luad-run = "luad_survival.cli:main"
+luad-pathways = "luad_survival.pathways_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

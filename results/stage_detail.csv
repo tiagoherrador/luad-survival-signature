@@ -1,0 +1,8 @@
+stage_group,stage_detail,patients,deaths,median_follow_up_days,deaths_pct
+Advanced,Stage IIIA,69,38,468.0,55.1
+Advanced,Stage IIIB,10,6,524.0,60.0
+Advanced,Stage IV,25,16,656.0,64.0
+Early,Stage IA,125,27,674.0,21.6
+Early,Stage IB,128,36,704.5,28.1
+Early,Stage IIA,48,19,586.5,39.6
+Early,Stage IIB,63,27,761.0,42.9

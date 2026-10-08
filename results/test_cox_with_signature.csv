@@ -1,0 +1,4 @@
+,hazard_ratio,ci95_low,ci95_high,p_value
+Age (per year),1.0213,0.9924,1.051,0.14996083084074752
+Advanced vs early stage,3.3896,1.944,5.9103,1.6817417072900713e-05
+Signature risk score (per SD),1.3605,1.0392,1.7811,0.025091618578908632

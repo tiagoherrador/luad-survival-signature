@@ -1,0 +1,9 @@
+,value
+patients,474.0
+genes_measured,60660.0
+deaths,171.0
+alive_or_censored,303.0
+median_follow_up_days,651.0
+km_median_survival_days,1454.0
+median_age_years,66.61601642710473
+female_pct,54.85232067510548

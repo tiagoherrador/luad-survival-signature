@@ -1,0 +1,16 @@
+ensembl_id,gene_symbol,gene_name,direction,hazard_ratio_per_SD,p_value_train
+ENSG00000107984.10,DKK1,dickkopf Wnt signaling pathway inhibitor 1,risk (worse survival),1.817,8.545286647049084e-12
+ENSG00000205420.11,KRT6A,keratin 6A,risk (worse survival),1.57,1.4139632337388546e-07
+ENSG00000206075.14,SERPINB5,serpin family B member 5,risk (worse survival),1.563,3.1340563281346e-07
+ENSG00000057294.15,PKP2,plakophilin 2,risk (worse survival),1.614,8.574843157179528e-07
+ENSG00000147689.16,SACK1A,scaffolding CK1 anchoring protein A,risk (worse survival),1.67,1.034820505248695e-06
+ENSG00000188910.8,GJB3,gap junction protein beta 3,risk (worse survival),1.56,1.8604954444389545e-06
+ENSG00000125775.15,SDCBP2,syndecan binding protein 2,risk (worse survival),1.509,2.3305978412982804e-06
+ENSG00000176842.15,IRX5,iroquois homeobox 5,protective,0.65,3.716915256338703e-06
+ENSG00000104140.7,RHOV,ras homolog family member V,risk (worse survival),1.531,3.8526459236052194e-06
+ENSG00000023839.12,ABCC2,ATP binding cassette subfamily C member 2,risk (worse survival),1.408,7.802999602040233e-06
+ENSG00000075618.18,FSCN1,fascin actin-bundling protein 1,risk (worse survival),1.515,9.514502720690206e-06
+ENSG00000134013.16,LOXL2,lysyl oxidase like 2,risk (worse survival),1.505,1.1443642017364365e-05
+ENSG00000124466.9,LYPD3,LY6/PLAUR domain containing 3,risk (worse survival),1.461,1.1524720723020481e-05
+ENSG00000186847.6,KRT14,keratin 14,risk (worse survival),1.395,1.9142420099070457e-05
+ENSG00000029153.14,BMAL2,basic helix-loop-helix ARNT like 2,risk (worse survival),1.484,2.0714844543886656e-05

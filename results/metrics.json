@@ -1,4 +1,7 @@
 {
+  "random_c_mean": 0.5923975409836065,
+  "random_c_p95": 0.6574316939890711,
+  "signature_percentile_vs_random": 0.795,
   "seed": 42,
   "n_train": 331,
   "n_test": 143,
@@ -47,6 +50,30 @@
       "min": 0.572197999487048,
       "max": 0.7469736529788749
     },
-    "frac_splits_logrank_p_lt_0.05": 0.3333333333333333
+    "frac_splits_logrank_p_lt_0.05": 0.3333333333333333,
+    "random_signatures": {
+      "mean_c_of_random_signatures": 0.5850544733526539,
+      "mean_percentile_of_our_signature": 0.7328333333333333,
+      "fraction_of_splits_above_95th_percentile": 0.1
+    }
+  },
+  "clinical": {
+    "cox_clinical": {
+      "patients": 474,
+      "events": 171,
+      "concordance": 0.6225331814695149,
+      "likelihood_ratio_test_p": 8.021170082953063e-07
+    },
+    "logrank_early_vs_advanced_p": 1.7812355077440063e-09,
+    "pca_cohens_d_early_minus_advanced": {
+      "PC1": 0.1942002655705575,
+      "PC2": 0.42270557864112707
+    }
+  },
+  "test_cox_with_signature": {
+    "patients": 143,
+    "events": 52,
+    "concordance": 0.6745901639344263,
+    "likelihood_ratio_test_p": 7.329621666694861e-05
   }
 }
