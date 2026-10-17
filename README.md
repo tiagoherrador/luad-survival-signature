@@ -70,6 +70,9 @@ Those 15 are the list from one particular training set; with other training pati
 
 Steps 1–4 are the exploration and the search for a signature. Steps 5–7 are the checks I use to decide how much to trust it.
 
+<details>
+<summary><b>Show the seven steps</b> (cohort, stage, PCA, signature, shuffling test, comparisons, pathways)</summary>
+
 ### 1. Who are the patients?
 
 After keeping **primary tumours with complete data, one row per patient**, the cohort has **474 patients**: 171 died during follow-up and 303 were alive or lost to follow-up ("censored").
@@ -123,7 +126,7 @@ A statistical model that looks at age, stage and sex *together* (Cox regression)
 | Age (per extra year) | 1.01 (0.99 – 1.03) | 0.21 |
 | Female vs male | 1.04 (0.76 – 1.41) | 0.82 |
 
-*Hazard ratio:* how many times higher the risk of dying at any moment is, compared with the reference group. 3.23 means roughly three times the risk. Age, sex and the four stage levels together rank patients with a **C-index of about 0.66** on held-out patients (see the glossary below). This is the bar any gene signature has to clear (with early/advanced stage only, it would be 0.61).
+*Hazard ratio:* how many times higher the risk of dying at any moment is, compared with the reference group. 3.23 means roughly three times the risk. Age, sex and the four stage levels together rank patients with a **C-index of about 0.66** on held-out patients (see [What the metrics mean](#what-the-metrics-mean)). This is the bar any gene signature has to clear (with early/advanced stage only, it would be 0.61).
 
 ### 3. Does the whole gene-activity profile separate early from advanced tumours?
 
@@ -220,7 +223,10 @@ A second, narrower test asks whether the 15 signature genes *themselves* are enr
 
 > **Careful with the story.** The pathway picture says *what kind of biology* tracks survival. Because proliferation-related signals show up in almost any gene set, it does not by itself prove that *these 15 genes* are special (see step 6).
 
-**What the metrics mean**
+</details>
+
+## What the metrics mean
+
 - **C-index (0.5 to 1)** — take two patients, one who died earlier than the other: how often does the predictor give the one who died earlier the higher risk? 0.5 is a coin flip, 1.0 is always right, and **0.6 to 0.7 is modest**.
 - **Hazard ratio** — how many times higher the risk of dying is in one group than in another (1 = no difference).
 - **Kaplan–Meier curve** — the share of patients still alive over time. **Log-rank p-value** — how likely a gap this large between two curves would be by chance alone.
